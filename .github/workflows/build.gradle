@@ -1,0 +1,60 @@
+apply plugin: 'com.android.application'
+apply from: "$project.rootDir/gradle/script-git-version.gradle"
+apply plugin: 'com.google.firebase.firebase-perf'
+
+android {
+    compileSdkVersion androidVersions.compileSdkVersion
+    buildToolsVersion androidVersions.buildToolsVersion
+
+    dexOptions {
+        javaMaxHeapSize "4g"
+    }
+    defaultConfig {
+        applicationId "com.mapbox.mapboxandroiddemo"
+
+        minSdkVersion androidVersions.minWearSdkVersion
+        targetSdkVersion androidVersions.targetSdkVersion
+
+        versionCode gitVersionCode
+        versionName gitVersionName
+    }
+    signingConfigs {
+        release {
+            keyAlias System.getenv("CIRCLECI_ANDROID_KEYSTORE_ALIAS")
+            keyPassword System.getenv("CIRCLECI_ANDROID_KEYSTORE_PRIVATE_KEY_PASSWORD")
+            storeFile file("$project.rootDir/mapbox_demo.keystore")
+            storePassword System.getenv("CIRCLECI_ANDROID_KEYSTORE_PASSWORD")
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+    lintOptions {
+        abortOnError false
+        disable 'MissingTranslation', 'ExtraTranslation'
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    compileOnly wearDependencies.googleWearable
+    implementation wearDependencies.supportGoogleWearable
+    implementation wearDependencies.wearableUiX
+    implementation wearDependencies.gpsWearable
+    implementation wearDependencies.gpsLocation
+
+    // Mapbox dependencies
+    api(dependenciesList.mapboxMapSdk)
+
+    // Firebase
+    implementation dependenciesList.firebasePerf
+    implementation project(':SharedCode')
+}
+
+apply from: "$project.rootDir/gradle/checkstyle.gradle"
